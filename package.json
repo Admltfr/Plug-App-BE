@@ -1,0 +1,35 @@
+{
+  "name": "plug-be",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "make:domain": "node src/utils/make-domain.util.js make:domain",
+    "seed:admin": "node src/utils/seeders/admin.seeder.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.2",
+    "bcryptjs": "^3.0.2",
+    "capitalize": "^2.0.4",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.1",
+    "is-arrayish": "^0.3.2",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "moment-timezone": "^0.6.0",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "prisma": "^6.19.2",
+    "simple-swizzle": "^0.2.2",
+    "winston": "^3.17.0"
+  }
+}
