@@ -14,15 +14,16 @@ datasource db {
 }
 
 model Seller {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   name         String
-  email        String   @unique
+  email        String    @unique
   password     String
   address      String?
   phone_number String?
   image_url    String?
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  products     Product[]
 
   @@map("sellers")
 }
@@ -49,4 +50,20 @@ model Admin {
   updated_at DateTime @updatedAt
 
   @@map("admins")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int
+  image_url   String?
+  seller_id   String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  seller Seller @relation(fields: [seller_id], references: [id])
+
+  @@map("products")
 }

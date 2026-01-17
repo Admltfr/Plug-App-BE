@@ -16,7 +16,7 @@ class AuthService extends BaseService {
   async login(info) {
     const { email, password } = info;
 
-    const user = await this.db.customer.findUnique({
+    let user = await this.db.customer.findUnique({
       where: { email },
     });
 
