@@ -11,8 +11,7 @@ class WarehouseController extends BaseController {
 
   async getAllWarehouseBySellerId(req, res) {
     const id = req.query.seller_id;
-    const query = req.query;
-    const data = await this.service.getAllWarehouseBySellerId(id, query);
+    const data = await this.service.getAllWarehouseBySellerId(id);
     return this.response.success(
       res,
       data.data,

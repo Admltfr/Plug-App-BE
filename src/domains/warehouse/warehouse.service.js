@@ -8,8 +8,8 @@ class WarehouseService extends BaseService {
     // this.db = Prisma
   }
 
-  async getAllWarehouseBySellerId(sellerId, query) {
-    const { page, limit, offset } = getPagination(query);
+  async getAllWarehouseBySellerId(sellerId) {
+    const { page, limit, offset } = getPagination(sellerId);
 
     const totalRow = await this.db.$queryRaw`
       SELECT COUNT(*)::int AS total
