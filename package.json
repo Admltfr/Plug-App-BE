@@ -11,9 +11,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "make:domain": "node src/utils/make-domain.util.js make:domain",
-    "seed:admin": "node src/utils/seeders/admin.seeder.js",
-    "seed:user": "node src/utils/seeders/user.seeder.js",
-    "seed:product": "node src/utils/seeders/product.seeder.js"
+    "db:seed": "node src/utils/seeders/user.seeder.js && node src/utils/seeders/warehouse.seeder.js && node src/utils/seeders/product.seeder.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

@@ -20,10 +20,13 @@ class AuthService extends BaseService {
       where: { email },
     });
 
+    let Role = Roles.Customer;
+
     if (!user) {
       user = await this.db.seller.findUnique({
         where: { email },
       });
+      Role = Roles.Seller;
     }
 
     if (!user) {
@@ -35,8 +38,6 @@ class AuthService extends BaseService {
     if (!isMatch) {
       throw this.error.unauthorized("Invalid password");
     }
-
-    const Role = user.role === Roles.Seller ? Roles.Seller : Roles.Customer;
 
     const accessToken = generateToken({ id: user.id, role: Role });
 

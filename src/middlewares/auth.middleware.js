@@ -41,7 +41,7 @@ class AuthMiddleware {
       }
 
       if (decoded.role === this.roles.Seller) {
-        const seller = await this.prisma.Seller.findUnique({
+        const seller = await this.prisma.seller.findUnique({
           where: { id: decoded.id },
         });
 
