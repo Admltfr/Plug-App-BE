@@ -1,5 +1,5 @@
 import BaseSeeder from "../../common/base_classes/base-seeder.js";
-import crypto from "node:crypto";
+import crypto from "crypto";
 
 class WarehouseSeeder extends BaseSeeder {
   constructor() {

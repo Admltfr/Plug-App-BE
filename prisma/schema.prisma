@@ -5,42 +5,53 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [postgis]
 }
 
+enum SubscriptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ACTIVE
+  CANCELLED
+}
+
 model Seller {
-  id           String      @id @default(uuid())
-  name         String
-  email        String      @unique
-  password     String
-  address      String?
-  phone_number String?
-  image_url    String?
-  created_at   DateTime    @default(now())
-  updated_at   DateTime    @updatedAt
-  products     Product[]
-  warehouses   Warehouse[]
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  password      String
+  address       String?
+  phone_number  String?
+  image_url     String?
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  products      Product[]
+  warehouses    Warehouse[]
+  subscriptions Subscription[]
 
   @@map("sellers")
 }
 
 model Customer {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  password     String
-  address      String?
-  phone_number String?
-  image_url    String?
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  password      String
+  address       String?
+  phone_number  String?
+  image_url     String?
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  stores        Store[]
+  subscriptions Subscription[]
 
   @@map("customers")
 }
@@ -67,14 +78,15 @@ model Product {
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
-  seller    Seller     @relation(fields: [seller_id], references: [id])
-  warehouse Warehouse? @relation(fields: [warehouse_id], references: [id])
+  seller        Seller         @relation(fields: [seller_id], references: [id])
+  warehouse     Warehouse?     @relation(fields: [warehouse_id], references: [id])
+  subscriptions Subscription[]
 
   @@map("products")
 }
 
 model Warehouse {
-  id                   String                   @id @default(uuid())
+  id                   String                                @id @default(uuid())
   seller_id            String
   name                 String
   contact_name         String
@@ -85,8 +97,53 @@ model Warehouse {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  seller   Seller    @relation(fields: [seller_id], references: [id], onDelete: Cascade)
-  products Product[]
+  seller        Seller         @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  products      Product[]
+  subscriptions Subscription[]
 
   @@map("warehouses")
+}
+
+model Store {
+  id                   String                                @id @default(uuid())
+  customer_id          String
+  name                 String
+  contact_name         String
+  contact_phone_number String
+  address              String
+  pinpoint             Unsupported("geography(Point, 4326)")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  customer      Customer       @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@map("stores")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  product_id         String
+  customer_id        String
+  seller_id          String
+  warehouse_id       String
+  store_id           String
+  quantity           Int
+  frequency_days     Int
+  status             SubscriptionStatus @default(PENDING)
+  price_per_cycle    Float
+  start_date         DateTime
+  next_delivery_date DateTime
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  product   Product   @relation(fields: [product_id], references: [id])
+  customer  Customer  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  seller    Seller    @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: Restrict)
+  store     Store     @relation(fields: [store_id], references: [id], onDelete: Restrict)
+
+  @@map("subscriptions")
 }
