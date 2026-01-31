@@ -15,43 +15,51 @@ datasource db {
   extensions = [postgis]
 }
 
-enum SubscriptionStatus {
+enum PaymentType {
+  TOPUP
+  WITHDRAW
+}
+
+enum TransferStatus {
   PENDING
-  APPROVED
-  REJECTED
-  ACTIVE
-  CANCELLED
+  COMPLETED
+  FAILED
 }
 
 model Seller {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  password      String
-  address       String?
-  phone_number  String?
-  image_url     String?
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
-  products      Product[]
-  warehouses    Warehouse[]
-  subscriptions Subscription[]
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  address      String?
+  phone_number String?
+  image_url    String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  products    Product[]
+  wallet      Wallet?
+  payments    Payment[]
+  transfers   Transfer[]
+  bankAccount BankAccount?
 
   @@map("sellers")
 }
 
 model Customer {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  password      String
-  address       String?
-  phone_number  String?
-  image_url     String?
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
-  stores        Store[]
-  subscriptions Subscription[]
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  address      String?
+  phone_number String?
+  image_url    String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  wallet    Wallet?
+  payments  Payment[]
+  transfers Transfer[]
 
   @@map("customers")
 }
@@ -67,83 +75,81 @@ model Admin {
 }
 
 model Product {
-  id           String   @id @default(uuid())
-  name         String
-  description  String?
-  price        Float
-  stock        Int
-  image_url    String?
-  seller_id    String
-  warehouse_id String
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int
+  image_url   String?
+  seller_id   String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
-  seller        Seller         @relation(fields: [seller_id], references: [id])
-  warehouse     Warehouse?     @relation(fields: [warehouse_id], references: [id])
-  subscriptions Subscription[]
+  seller Seller @relation(fields: [seller_id], references: [id])
 
   @@map("products")
 }
 
-model Warehouse {
-  id                   String                                @id @default(uuid())
-  seller_id            String
-  name                 String
-  contact_name         String
-  contact_phone_number String
-  address              String
-  pinpoint             Unsupported("geography(Point, 4326)")
+model Wallet {
+  id          String   @id @default(uuid())
+  customer_id String?  @unique
+  seller_id   String?  @unique
+  balance     Decimal  @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  customer Customer? @relation(fields: [customer_id], references: [id])
+  seller   Seller?   @relation(fields: [seller_id], references: [id])
 
-  seller        Seller         @relation(fields: [seller_id], references: [id], onDelete: Cascade)
-  products      Product[]
-  subscriptions Subscription[]
-
-  @@map("warehouses")
+  @@map("wallets")
 }
 
-model Store {
-  id                   String                                @id @default(uuid())
-  customer_id          String
-  name                 String
-  contact_name         String
-  contact_phone_number String
-  address              String
-  pinpoint             Unsupported("geography(Point, 4326)")
+model Payment {
+  id               String      @id @default(uuid())
+  type             PaymentType
+  customer_id      String?
+  seller_id        String?
+  amount           Decimal
+  status           String
+  order_id         String      @unique
+  transaction_id   String?
+  snap_token       String?
+  redirect_url     String?
+  raw_notification Json?
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  customer Customer? @relation(fields: [customer_id], references: [id])
+  seller   Seller?   @relation(fields: [seller_id], references: [id])
 
-  customer      Customer       @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  subscriptions Subscription[]
-
-  @@map("stores")
+  @@map("payments")
 }
 
-model Subscription {
-  id                 String             @id @default(uuid())
-  product_id         String
-  customer_id        String
-  seller_id          String
-  warehouse_id       String
-  store_id           String
-  quantity           Int
-  frequency_days     Int
-  status             SubscriptionStatus @default(PENDING)
-  price_per_cycle    Float
-  start_date         DateTime
-  next_delivery_date DateTime
+model Transfer {
+  id               String         @id @default(uuid())
+  from_customer_id String
+  to_seller_id     String
+  amount           Decimal
+  status           TransferStatus @default(PENDING)
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  fromCustomer Customer @relation(fields: [from_customer_id], references: [id], onDelete: Restrict)
+  toSeller     Seller   @relation(fields: [to_seller_id], references: [id], onDelete: Restrict)
 
-  product   Product   @relation(fields: [product_id], references: [id])
-  customer  Customer  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  seller    Seller    @relation(fields: [seller_id], references: [id], onDelete: Cascade)
-  warehouse Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: Restrict)
-  store     Store     @relation(fields: [store_id], references: [id], onDelete: Restrict)
+  @@map("transfers")
+}
 
-  @@map("subscriptions")
+model BankAccount {
+  id             String   @id @default(uuid())
+  seller_id      String   @unique
+  bank_code      String
+  account_number String
+  account_name   String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  seller Seller @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+
+  @@map("bank_accounts")
 }
