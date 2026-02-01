@@ -4,7 +4,7 @@ import crypto from "crypto";
 import Roles from "../../common/enums/user-roles.enum.js";
 
 const snap = new midtransClient.Snap({
-  isProduction: process.env.MIDTRANS_IS_PRODUCTION === "false",
+  isProduction: false,
   serverKey: process.env.MIDTRANS_SERVER_KEY,
   clientKey: process.env.MIDTRANS_CLIENT_KEY,
 });
@@ -49,7 +49,11 @@ class PaymentService extends BaseService {
     if (user.role !== Roles.Customer)
       throw this.error.forbidden("Only borrower can topup");
 
-    const orderId = `TOPUP-${user.id}-${Date.now()}`;
+    const ts = Date.now().toString().slice(-8);
+    const uid = user.id.slice(0, 8);
+
+    const orderId = `TP-${uid}-${ts}`;
+
     const parameter = {
       transaction_details: { order_id: orderId, gross_amount: amount },
       customer_details: { email: user.email, first_name: user.name },

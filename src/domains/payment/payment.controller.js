@@ -10,7 +10,7 @@ class PaymentController extends BaseController {
   }
 
   async createTopup(req, res) {
-    const amount = req.body;
+    const { amount } = req.body;
     const data = await this.service.createTopup(req.user, amount);
     return this.response.created(res, data, "Topup initiated");
   }
