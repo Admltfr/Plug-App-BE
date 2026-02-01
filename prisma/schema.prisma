@@ -26,6 +26,11 @@ enum TransferStatus {
   FAILED
 }
 
+enum ChatSender {
+  CUSTOMER
+  SELLER
+}
+
 model Seller {
   id           String   @id @default(uuid())
   name         String
@@ -42,6 +47,7 @@ model Seller {
   payments    Payment[]
   transfers   Transfer[]
   bankAccount BankAccount?
+  chatRooms   ChatRoom[]
 
   @@map("sellers")
 }
@@ -60,6 +66,7 @@ model Customer {
   wallet    Wallet?
   payments  Payment[]
   transfers Transfer[]
+  chatRooms ChatRoom[]
 
   @@map("customers")
 }
@@ -152,4 +159,31 @@ model BankAccount {
   seller Seller @relation(fields: [seller_id], references: [id], onDelete: Cascade)
 
   @@map("bank_accounts")
+}
+
+model ChatRoom {
+  id          String        @id @default(uuid())
+  customer_id String
+  seller_id   String
+  created_at  DateTime      @default(now())
+  messages    ChatMessage[]
+
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  seller   Seller   @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+
+  @@unique([customer_id, seller_id])
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id         String     @id @default(uuid())
+  room_id    String
+  sender     ChatSender
+  content    String?
+  image_url  String?
+  created_at DateTime   @default(now())
+
+  room ChatRoom @relation(fields: [room_id], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
 }

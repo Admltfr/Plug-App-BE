@@ -11,7 +11,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "make:domain": "node src/utils/make-domain.util.js make:domain",
-    "db:seed": "node src/utils/seeders/user.seeder.js && node src/utils/seeders/warehouse.seeder.js && node src/utils/seeders/product.seeder.js && node src/utils/seeders/store.seeder.js"
+    "db:seed": "node src/utils/seeders/user.seeder.js && node src/utils/seeders/product.seeder.js",
+    "migrate": "npx prisma migrate dev -n"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
@@ -31,6 +32,7 @@
     "multer": "^2.0.2",
     "prisma": "^6.19.2",
     "simple-swizzle": "^0.2.2",
+    "socket.io": "^4.8.3",
     "winston": "^3.17.0"
   }
 }
