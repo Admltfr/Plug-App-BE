@@ -101,8 +101,9 @@ model Product {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  seller Seller @relation(fields: [seller_id], references: [id])
-  loans  Loan[]
+  seller    Seller     @relation(fields: [seller_id], references: [id])
+  loans     Loan[]
+  chatRooms ChatRoom[]
 
   @@map("products")
 }
@@ -175,13 +176,14 @@ model ChatRoom {
   id          String        @id @default(uuid())
   customer_id String
   seller_id   String
+  product_id  String
   created_at  DateTime      @default(now())
   messages    ChatMessage[]
 
   customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   seller   Seller   @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  @@unique([customer_id, seller_id])
   @@map("chat_rooms")
 }
 

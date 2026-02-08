@@ -93,14 +93,22 @@ class LoanService extends BaseService {
     });
 
     let room = await this.db.chatRoom.findFirst({
-      where: { customer_id: loan.borrower_id, seller_id: loan.lender_id },
+      where: {
+        customer_id: loan.borrower_id,
+        seller_id: loan.lender_id,
+        product_id: loan.product_id,
+      },
     });
+
     if (!room) {
       room = await this.db.chatRoom.create({
-        data: { customer_id: loan.borrower_id, seller_id: loan.lender_id },
+        data: {
+          customer_id: loan.borrower_id,
+          seller_id: loan.lender_id,
+          product_id: loan.product_id,
+        },
       });
     }
-
     return { ...updated, roomId: room.id };
   }
 

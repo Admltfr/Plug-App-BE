@@ -21,13 +21,8 @@ class PaymentController extends BaseController {
   }
 
   async payWithBalance(req, res) {
-    const { lenderId, amount, loanId } = req.body;
-    const data = await this.service.payWithBalance(
-      req.user,
-      lenderId,
-      amount,
-      loanId,
-    );
+    const { loanId } = req.body;
+    const data = await this.service.payWithBalance(req.user, loanId);
     return this.response.success(res, data, "Payment completed");
   }
 

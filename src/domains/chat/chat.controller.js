@@ -1,7 +1,6 @@
 import ChatService from "./chat.service.js";
 import BaseController from "../../common/base_classes/base-controller.js";
 
-
 class ChatController extends BaseController {
   constructor() {
     super(ChatService);
@@ -11,8 +10,8 @@ class ChatController extends BaseController {
   }
 
   async ensureRoom(req, res) {
-    const { otherId } = req.body;
-    const data = await this.service.ensureRoom(req.user, otherId);
+    const { otherId, productId } = req.body;
+    const data = await this.service.ensureRoom(req.user, otherId, productId);
     return this.response.success(res, data, "Room ensured");
   }
 

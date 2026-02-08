@@ -1,4 +1,5 @@
 import BaseService from "../../common/base_classes/base-service.js";
+import Roles from "../../common/enums/user-roles.enum.js";
 
 class ChatService extends BaseService {
   constructor() {
@@ -7,8 +8,9 @@ class ChatService extends BaseService {
     // this.db = Prisma
   }
 
-  async ensureRoom(user, otherId) {
+  async ensureRoom(user, otherId, productId) {
     if (!otherId) throw this.error.badRequest("otherId is required");
+    if (!productId) throw this.error.badRequest("productId is required");
 
     let customerId, sellerId;
     if (user.role === Roles.Customer) {
@@ -22,11 +24,19 @@ class ChatService extends BaseService {
     }
 
     let room = await this.db.chatRoom.findFirst({
-      where: { customer_id: customerId, seller_id: sellerId },
+      where: {
+        customer_id: customerId,
+        seller_id: sellerId,
+        product_id: productId,
+      },
     });
     if (!room) {
       room = await this.db.chatRoom.create({
-        data: { customer_id: customerId, seller_id: sellerId },
+        data: {
+          customer_id: customerId,
+          seller_id: sellerId,
+          product_id: productId,
+        },
       });
     }
     return room;

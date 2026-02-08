@@ -126,22 +126,16 @@ class PaymentService extends BaseService {
     }
   }
 
-  async payWithBalance(user, lenderId, amountRaw, loanId) {
-    const amount = Number(amountRaw);
+  async payWithBalance(user, loanId) {
+    const loan = await this.db.loan.findUnique({ where: { id: loanId } });
+    if (!loan) throw this.error.notFound("Loan not found");
+    if (loan.borrower_id !== user.id)
+      throw this.error.forbidden("Not your loan");
+    if (loan.status !== "ACCEPTED")
+      throw this.error.badRequest("Loan not accepted");
 
-    let loan = null;
-    if (loanId) {
-      loan = await this.db.loan.findUnique({ where: { id: loanId } });
-      if (!loan) throw this.error.notFound("Loan not found");
-      if (loan.borrower_id !== user.id)
-        throw this.error.forbidden("Not your loan");
-      if (loan.status !== "ACCEPTED")
-        throw this.error.badRequest("Loan not accepted");
-      if (loan.lender_id !== lenderId)
-        throw this.error.badRequest("Lender mismatch");
-      if (Number(loan.amount) !== amount)
-        throw this.error.badRequest("Amount must equal product price");
-    }
+    const lenderId = loan.lender_id;
+    const amount = Number(loan.amount);
 
     const borrowerWallet = await this.ensureWallet(user);
     if (Number(borrowerWallet.balance) < amount)
@@ -172,22 +166,18 @@ class PaymentService extends BaseService {
           status: "COMPLETED",
         },
       }),
+      this.db.loan.update({
+        where: { id: loanId },
+        data: { status: "PAID" },
+      }),
     ];
-
-    if (loanId) {
-      ops.push(
-        this.db.loan.update({
-          where: { id: loanId },
-          data: { status: "PAID" },
-        }),
-      );
-    }
 
     const tx = await this.db.$transaction(ops);
     return {
       transferId: tx[2].id,
       amount,
-      ...(loanId ? { loanId, loanStatus: "PAID" } : {}),
+      loanId,
+      loanStatus: "PAID",
     };
   }
 }

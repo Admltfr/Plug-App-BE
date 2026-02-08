@@ -2,6 +2,7 @@ import Joi from "joi";
 
 const ensureRoomSchema = Joi.object({
   otherId: Joi.string().uuid().required(),
+  productId: Joi.string().uuid().required(),
 });
 
 const sendMessageSchema = Joi.object({
