@@ -7,6 +7,7 @@ const topupSchema = Joi.object({
 const paySchema = Joi.object({
   lenderId: Joi.string().uuid().required(),
   amount: Joi.number().positive().required(),
+  loanId: Joi.string().uuid().optional(),
 });
 
 export { topupSchema, paySchema };

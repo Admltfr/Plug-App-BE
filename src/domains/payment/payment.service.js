@@ -126,15 +126,26 @@ class PaymentService extends BaseService {
     }
   }
 
-  async payWithBalance(user, lenderId, amountRaw) {
+  async payWithBalance(user, lenderId, amountRaw, loanId) {
     const amount = Number(amountRaw);
+
+    let loan = null;
+    if (loanId) {
+      loan = await this.db.loan.findUnique({ where: { id: loanId } });
+      if (!loan) throw this.error.notFound("Loan not found");
+      if (loan.borrower_id !== user.id)
+        throw this.error.forbidden("Not your loan");
+      if (loan.status !== "ACCEPTED")
+        throw this.error.badRequest("Loan not accepted");
+      if (loan.lender_id !== lenderId)
+        throw this.error.badRequest("Lender mismatch");
+      if (Number(loan.amount) !== amount)
+        throw this.error.badRequest("Amount must equal product price");
+    }
 
     const borrowerWallet = await this.ensureWallet(user);
     if (Number(borrowerWallet.balance) < amount)
       throw this.error.badRequest("Insufficient balance");
-
-    const lender = await this.db.seller.findUnique({ where: { id: lenderId } });
-    if (!lender) throw this.error.notFound("Lender not found");
 
     let lenderWallet = await this.db.wallet.findUnique({
       where: { seller_id: lenderId },
@@ -144,7 +155,7 @@ class PaymentService extends BaseService {
         data: { seller_id: lenderId },
       });
 
-    const tx = await this.db.$transaction([
+    const ops = [
       this.db.wallet.update({
         where: { id: borrowerWallet.id },
         data: { balance: { decrement: amount } },
@@ -161,9 +172,23 @@ class PaymentService extends BaseService {
           status: "COMPLETED",
         },
       }),
-    ]);
+    ];
 
-    return { transferId: tx[2].id, amount };
+    if (loanId) {
+      ops.push(
+        this.db.loan.update({
+          where: { id: loanId },
+          data: { status: "PAID" },
+        }),
+      );
+    }
+
+    const tx = await this.db.$transaction(ops);
+    return {
+      transferId: tx[2].id,
+      amount,
+      ...(loanId ? { loanId, loanStatus: "PAID" } : {}),
+    };
   }
 }
 
