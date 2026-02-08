@@ -6,6 +6,7 @@ import routes from "./routes.js";
 import BaseError from "./common/base_classes/base-error.js";
 import logger from "./utils/logger.util.js";
 import path from "path";
+import http from "http";
 
 class ExpressApplication {
   constructor(port) {
@@ -25,7 +26,7 @@ class ExpressApplication {
   setupRoutes(routes) {
     this.app.use(
       "/images",
-      express.static(path.join(process.cwd(), "public", "images"))
+      express.static(path.join(process.cwd(), "public", "images")),
     );
 
     const router = express.Router();
@@ -47,9 +48,11 @@ class ExpressApplication {
   }
 
   start() {
-    this.app.listen(this.port, () => {
+    const server = http.createServer(this.app);
+    server.listen(this.port, () => {
       logger.info(`Server is running on port ${this.port}`);
     });
+    return server;
   }
 }
 
