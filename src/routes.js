@@ -10,6 +10,7 @@ const routes = [
   { path: "/payment", route: paymentRoutes },
   { path: "/chat", route: chatRoutes },
   { path: "/loan", route: loanRoutes },
+  { path: "/meeting", route: meetingRoutes },
 ];
 
 export default routes;

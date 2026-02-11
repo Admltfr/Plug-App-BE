@@ -38,6 +38,13 @@ enum LoanStatus {
   PAID
 }
 
+enum MeetingStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+}
+
 model Seller {
   id           String   @id @default(uuid())
   name         String
@@ -213,6 +220,24 @@ model Loan {
   product  Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [borrower_id], references: [id], onDelete: Cascade)
   seller   Seller   @relation(fields: [lender_id], references: [id], onDelete: Cascade)
+  meeting  Meeting?
 
   @@map("loans")
+}
+
+model Meeting {
+  id         String        @id @default(uuid())
+  loan_id    String        @unique
+  lat        Decimal
+  lon        Decimal
+  address    String
+  status     MeetingStatus @default(PENDING)
+  qr_token   String?
+  qr_expires DateTime?
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+
+  loan Loan @relation(fields: [loan_id], references: [id], onDelete: Cascade)
+
+  @@map("meetings")
 }
