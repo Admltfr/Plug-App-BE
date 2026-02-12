@@ -36,6 +36,11 @@ class LoanController extends BaseController {
     const data = await this.service.getBorrowerLoans(req.user, status);
     return this.response.success(res, data, "Borrower loans fetched");
   }
+
+  async markReturned(req, res) {
+    const data = await this.service.markReturned(req.user, req.params.id);
+    return this.response.success(res, data, "Loan marked as returned");
+  }
 }
 
 export default new LoanController();

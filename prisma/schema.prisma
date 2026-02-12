@@ -36,6 +36,8 @@ enum LoanStatus {
   ACCEPTED
   REJECTED
   PAID
+  WAITING_FOR_RETURN
+  COMPLETED
 }
 
 enum MeetingStatus {

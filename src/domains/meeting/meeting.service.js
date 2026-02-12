@@ -127,9 +127,19 @@ class MeetingService extends BaseService {
         where: { loan_id: loanId },
         data: { status: "COMPLETED", qr_token: null, qr_expires: null },
       }),
+      this.db.loan.update({
+        where: { id: loanId },
+        data: { status: "WAITING_FOR_RETURN" },
+      }),
     ]);
 
-    return { ok: true };
+    const updatedLoan = await this.db.loan.findUnique({
+      where: { id: loanId },
+    });
+    const updatedMeeting = await this.db.meeting.findUnique({
+      where: { loan_id: loanId },
+    });
+    return { ok: true, loan: updatedLoan, meeting: updatedMeeting };
   }
 }
 

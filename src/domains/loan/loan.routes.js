@@ -44,6 +44,13 @@ class LoanRoutes extends BaseRoutes {
       this.auth.role([this.roles.Customer]),
       this.errCatch(this.controller.getBorrowerLoans.bind(this.controller)),
     );
+
+    this.router.patch(
+      "/:id/returned",
+      this.auth.authenticate,
+      this.auth.role([this.roles.Seller]),
+      this.errCatch(this.controller.markReturned.bind(this.controller)),
+    );
   }
 }
 

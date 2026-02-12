@@ -3,6 +3,7 @@ import productRoutes from "./domains/product/product.routes.js";
 import paymentRoutes from "./domains/payment/payment.routes.js";
 import chatRoutes from "./domains/chat/chat.routes.js";
 import loanRoutes from "./domains/loan/loan.routes.js";
+import meetingRoutes from "./domains/meeting/meeting.routes.js";
 
 const routes = [
   { path: "/auth", route: authRoutes },

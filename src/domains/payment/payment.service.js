@@ -154,16 +154,12 @@ class PaymentService extends BaseService {
         where: { id: borrowerWallet.id },
         data: { balance: { decrement: amount } },
       }),
-      this.db.wallet.update({
-        where: { id: lenderWallet.id },
-        data: { balance: { increment: amount } },
-      }),
       this.db.transfer.create({
         data: {
           from_customer_id: user.id,
           to_seller_id: lenderId,
           amount,
-          status: "COMPLETED",
+          status: "PENDING",
         },
       }),
       this.db.loan.update({
@@ -174,7 +170,7 @@ class PaymentService extends BaseService {
 
     const tx = await this.db.$transaction(ops);
     return {
-      transferId: tx[2].id,
+      transferId: tx[1].id,
       amount,
       loanId,
       loanStatus: "PAID",

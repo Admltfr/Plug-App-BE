@@ -126,6 +126,20 @@ class LoanService extends BaseService {
     });
     return loans;
   }
+
+  async markReturned(user, id) {
+    if (user.role !== Roles.Seller) throw this.error.forbidden("Only lender");
+    const loan = await this.db.loan.findUnique({ where: { id } });
+    if (!loan) throw this.error.notFound("Loan not found");
+    if (loan.lender_id !== user.id) throw this.error.forbidden("Not your loan");
+    if (loan.status !== "WAITING_FOR_RETURN")
+      throw this.error.badRequest("Loan not waiting for return");
+    const updated = await this.db.loan.update({
+      where: { id },
+      data: { status: "COMPLETED" },
+    });
+    return updated;
+  }
 }
 
 export default new LoanService();

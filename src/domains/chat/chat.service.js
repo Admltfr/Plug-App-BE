@@ -68,6 +68,19 @@ class ChatService extends BaseService {
     if (!content && !imageUrl) {
       throw this.error.badRequest("content or imageUrl is required");
     }
+
+    const loan = await this.db.loan.findFirst({
+      where: {
+        product_id: room.product_id,
+        borrower_id: room.customer_id,
+        lender_id: room.seller_id,
+      },
+      orderBy: { created_at: "desc" },
+    });
+    if (loan && loan.status === "COMPLETED") {
+      throw this.error.badRequest("Chat is disabled for completed loan");
+    }
+
     const sender = user.role === Roles.Customer ? "CUSTOMER" : "SELLER";
     const msg = await this.db.chatMessage.create({
       data: {
