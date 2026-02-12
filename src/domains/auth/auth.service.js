@@ -16,74 +16,51 @@ class AuthService extends BaseService {
   async login(info) {
     const { email, password } = info;
 
-    let user = await this.db.customer.findUnique({
-      where: { email },
-    });
-
-    let Role = Roles.Customer;
+    let user = await this.db.borrower.findUnique({ where: { email } });
+    let Role = Roles.Borrower;
 
     if (!user) {
-      user = await this.db.seller.findUnique({
-        where: { email },
-      });
-      Role = Roles.Seller;
+      user = await this.db.lender.findUnique({ where: { email } });
+      Role = Roles.Lender;
     }
 
-    if (!user) {
-      throw this.error.notFound("Email not found");
-    }
+    if (!user) throw this.error.notFound("Email not found");
 
     const isMatch = await matchPassword(password, user.password);
-
-    if (!isMatch) {
-      throw this.error.unauthorized("Invalid password");
-    }
+    if (!isMatch) throw this.error.unauthorized("Invalid password");
 
     const accessToken = generateToken({ id: user.id, role: Role });
-
     delete user.password;
 
-    const data = { user, accessToken };
-
-    return data;
+    return { user, accessToken };
   }
 
   async register(info) {
     const { name, email, password, role } = info;
-    var newUser, user;
-    if (role === Roles.Customer) {
-      user = await this.db.customer.findUnique({
-        where: { email },
-      });
+    let newUser, existing;
 
-      newUser = await this.db.customer.create({
-        data: {
-          name,
-          email,
-          password: await hashPassword(password),
-        },
-      });
-    } else if (role === Roles.Seller) {
-      user = await this.db.seller.findUnique({
-        where: { email },
-      });
+    if (role === Roles.Borrower) {
+      existing = await this.db.borrower.findUnique({ where: { email } });
 
-      newUser = await this.db.seller.create({
-        data: {
-          name,
-          email,
-          password: await hashPassword(password),
-        },
+      if (existing) throw this.error.badRequest("Email already registered");
+
+      newUser = await this.db.borrower.create({
+        data: { name, email, password: await hashPassword(password) },
+      });
+    } else if (role === Roles.Lender) {
+      existing = await this.db.lender.findUnique({ where: { email } });
+
+      if (existing) throw this.error.badRequest("Email already registered");
+
+      newUser = await this.db.lender.create({
+        data: { name, email, password: await hashPassword(password) },
       });
     } else {
       throw this.error.badRequest("Invalid role specified");
     }
 
     delete newUser.password;
-
-    const data = { newUser };
-
-    return data;
+    return { newUser };
   }
 }
 

@@ -6,57 +6,58 @@ class UserSeeder extends BaseSeeder {
     super();
   }
   async seed() {
-    const sellers = [
+    const lenders = [
       {
-        name: "Seller One",
-        email: "seller1@example.com",
-        password: "Seller123!",
+        name: "Lender One",
+        email: "lender1@example.com",
+        password: "Lender123!",
       },
       {
-        name: "Seller Two",
-        email: "seller2@example.com",
-        password: "Seller123!",
+        name: "Lender Two",
+        email: "lender2@example.com",
+        password: "Lender123!",
       },
     ];
-    const customers = [
+    const borrowers = [
       {
-        name: "Customer One",
-        email: "customer1@example.com",
-        password: "Customer123!",
+        name: "Borrower One",
+        email: "borrower1@example.com",
+        password: "Borrower123!",
       },
       {
-        name: "Customer Two",
-        email: "customer2@example.com",
-        password: "Customer123!",
+        name: "borrower Two",
+        email: "borrower2@example.com",
+        password: "Borrower123!",
       },
     ];
 
-    for (const s of sellers) {
-      const exists = await this.db.seller.findUnique({
-        where: { email: s.email },
+    for (const l of lenders) {
+      const exists = await this.db.lender.findUnique({
+        where: { email: l.email },
       });
+
       if (exists) {
-        this.log.warn(`Seller exists: ${s.email}`);
+        this.log.warn(`Seller exists: ${l.email}`);
         continue;
       }
-      await this.db.seller.create({
-        data: { ...s, password: await hashPassword(s.password) },
+      await this.db.lender.create({
+        data: { ...l, password: await hashPassword(l.password) },
       });
-      this.log.info(`Seller seeded: ${s.email}`);
+      this.log.info(`Lender seeded: ${l.email}`);
     }
 
-    for (const c of customers) {
-      const exists = await this.db.customer.findUnique({
-        where: { email: c.email },
+    for (const b of borrowers) {
+      const exists = await this.db.borrower.findUnique({
+        where: { email: b.email },
       });
       if (exists) {
-        this.log.warn(`Customer exists: ${c.email}`);
+        this.log.warn(`Borrower exists: ${b.email}`);
         continue;
       }
-      await this.db.customer.create({
-        data: { ...c, password: await hashPassword(c.password) },
+      await this.db.borrower.create({
+        data: { ...b, password: await hashPassword(b.password) },
       });
-      this.log.info(`Customer seeded: ${c.email}`);
+      this.log.info(`Borrower seeded: ${b.email}`);
     }
   }
 }

@@ -24,7 +24,7 @@ class PaymentRoutes extends BaseRoutes {
     this.router.post(
       "/topup",
       this.auth.authenticate,
-      this.auth.role([this.roles.Customer]),
+      this.auth.role([this.roles.Borrower]),
       this.validate(topupSchema),
       this.errCatch(this.controller.createTopup.bind(this.controller)),
     );
@@ -37,7 +37,7 @@ class PaymentRoutes extends BaseRoutes {
     this.router.post(
       "/pay",
       this.auth.authenticate,
-      this.auth.role([this.roles.Customer]),
+      this.auth.role([this.roles.Borrower]),
       this.validate(paySchema),
       this.errCatch(this.controller.payWithBalance.bind(this.controller)),
     );

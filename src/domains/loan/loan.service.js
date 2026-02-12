@@ -9,29 +9,25 @@ class LoanService extends BaseService {
   }
 
   async createLoan(user, productId) {
-    if (user.role !== Roles.Customer)
+    if (user.role !== Roles.Borrower)
       throw this.error.forbidden("Only borrower can create loan");
+
     const product = await this.db.product.findUnique({
       where: { id: productId },
     });
     if (!product) throw this.error.notFound("Product not found");
 
     const existingOpen = await this.db.loan.findFirst({
-      where: {
-        product_id: productId,
-        status: { in: ["PENDING", "ACCEPTED"] },
-      },
+      where: { product_id: productId, status: { in: ["PENDING", "ACCEPTED"] } },
       include: {
-        product: { include: { seller: true } },
-        customer: true,
-        seller: true,
+        product: { include: { lender: true } },
+        borrower: true,
+        lender: true,
       },
     });
 
     if (existingOpen) {
-      if (existingOpen.borrower_id === user.id) {
-        return existingOpen;
-      }
+      if (existingOpen.borrower_id === user.id) return existingOpen;
       throw this.error.badRequest("Product is locked by another borrower");
     }
 
@@ -40,13 +36,13 @@ class LoanService extends BaseService {
       data: {
         product_id: productId,
         borrower_id: user.id,
-        lender_id: product.seller_id,
+        lender_id: product.lender_id,
         amount,
       },
       include: {
-        product: { include: { seller: true } },
-        customer: true,
-        seller: true,
+        product: { include: { lender: true } },
+        borrower: true,
+        lender: true,
       },
     });
 
@@ -54,15 +50,15 @@ class LoanService extends BaseService {
   }
 
   async getBorrowerLoans(user, status) {
-    if (user.role !== Roles.Customer)
+    if (user.role !== Roles.Borrower)
       throw this.error.forbidden("Only borrower");
     const where = { borrower_id: user.id, ...(status ? { status } : {}) };
     const loans = await this.db.loan.findMany({
       where,
       include: {
-        product: { include: { seller: true } },
-        customer: true,
-        seller: true,
+        product: { include: { lender: true } },
+        borrower: true,
+        lender: true,
       },
       orderBy: { created_at: "desc" },
     });
@@ -70,7 +66,7 @@ class LoanService extends BaseService {
   }
 
   async confirmLoan(user, id, decision) {
-    if (user.role !== Roles.Seller)
+    if (user.role !== Roles.Lender)
       throw this.error.forbidden("Only lender can confirm");
     const loan = await this.db.loan.findUnique({ where: { id } });
     if (!loan) throw this.error.notFound("Loan not found");
@@ -80,47 +76,28 @@ class LoanService extends BaseService {
       throw this.error.badRequest("Loan is not pending");
 
     if (decision === "REJECT") {
-      const updated = await this.db.loan.update({
+      return await this.db.loan.update({
         where: { id },
         data: { status: "REJECTED" },
       });
-      return updated;
     }
 
     const updated = await this.db.loan.update({
       where: { id },
       data: { status: "ACCEPTED" },
     });
-
-    let room = await this.db.chatRoom.findFirst({
-      where: {
-        customer_id: loan.borrower_id,
-        seller_id: loan.lender_id,
-        product_id: loan.product_id,
-      },
-    });
-
-    if (!room) {
-      room = await this.db.chatRoom.create({
-        data: {
-          customer_id: loan.borrower_id,
-          seller_id: loan.lender_id,
-          product_id: loan.product_id,
-        },
-      });
-    }
-    return { ...updated, roomId: room.id };
+    return updated; 
   }
 
   async getLenderLoans(user, status) {
-    if (user.role !== Roles.Seller) throw this.error.forbidden("Only lender");
+    if (user.role !== Roles.Lender) throw this.error.forbidden("Only lender");
     const where = { lender_id: user.id, ...(status ? { status } : {}) };
     const loans = await this.db.loan.findMany({
       where,
       include: {
-        product: { include: { seller: true } },
-        customer: true,
-        seller: true,
+        product: { include: { lender: true } },
+        borrower: true,
+        lender: true,
       },
       orderBy: { created_at: "desc" },
     });
@@ -128,12 +105,13 @@ class LoanService extends BaseService {
   }
 
   async markReturned(user, id) {
-    if (user.role !== Roles.Seller) throw this.error.forbidden("Only lender");
+    if (user.role !== Roles.Lender) throw this.error.forbidden("Only lender");
     const loan = await this.db.loan.findUnique({ where: { id } });
     if (!loan) throw this.error.notFound("Loan not found");
     if (loan.lender_id !== user.id) throw this.error.forbidden("Not your loan");
     if (loan.status !== "WAITING_FOR_RETURN")
       throw this.error.badRequest("Loan not waiting for return");
+
     const updated = await this.db.loan.update({
       where: { id },
       data: { status: "COMPLETED" },

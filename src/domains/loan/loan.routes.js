@@ -18,7 +18,7 @@ class LoanRoutes extends BaseRoutes {
     this.router.post(
       "/",
       this.auth.authenticate,
-      this.auth.role([this.roles.Customer]),
+      this.auth.role([this.roles.Borrower]),
       this.validate(createLoanSchema),
       this.errCatch(this.controller.createLoan.bind(this.controller)),
     );
@@ -26,7 +26,7 @@ class LoanRoutes extends BaseRoutes {
     this.router.patch(
       "/:id/confirm",
       this.auth.authenticate,
-      this.auth.role([this.roles.Seller]),
+      this.auth.role([this.roles.Lender]),
       this.validate(confirmLoanSchema),
       this.errCatch(this.controller.confirmLoan.bind(this.controller)),
     );
@@ -34,21 +34,21 @@ class LoanRoutes extends BaseRoutes {
     this.router.get(
       "/lender",
       this.auth.authenticate,
-      this.auth.role([this.roles.Seller]),
+      this.auth.role([this.roles.Lender]),
       this.errCatch(this.controller.getLenderLoans.bind(this.controller)),
     );
 
     this.router.get(
       "/",
       this.auth.authenticate,
-      this.auth.role([this.roles.Customer]),
+      this.auth.role([this.roles.Borrower]),
       this.errCatch(this.controller.getBorrowerLoans.bind(this.controller)),
     );
 
     this.router.patch(
       "/:id/returned",
       this.auth.authenticate,
-      this.auth.role([this.roles.Seller]),
+      this.auth.role([this.roles.Lender]),
       this.errCatch(this.controller.markReturned.bind(this.controller)),
     );
   }

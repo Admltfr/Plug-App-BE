@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -27,8 +21,8 @@ enum TransferStatus {
 }
 
 enum ChatSender {
-  CUSTOMER
-  SELLER
+  BORROWER
+  LENDER
 }
 
 enum LoanStatus {
@@ -47,7 +41,7 @@ enum MeetingStatus {
   COMPLETED
 }
 
-model Seller {
+model Lender {
   id           String   @id @default(uuid())
   name         String
   email        String   @unique
@@ -66,10 +60,10 @@ model Seller {
   chatRooms   ChatRoom[]
   loans       Loan[]
 
-  @@map("sellers")
+  @@map("lenders")
 }
 
-model Customer {
+model Borrower {
   id           String   @id @default(uuid())
   name         String
   email        String   @unique
@@ -86,7 +80,7 @@ model Customer {
   chatRooms ChatRoom[]
   loans     Loan[]
 
-  @@map("customers")
+  @@map("borrowers")
 }
 
 model Admin {
@@ -106,11 +100,11 @@ model Product {
   price       Float
   stock       Int
   image_url   String?
-  seller_id   String
+  lender_id   String
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  seller    Seller     @relation(fields: [seller_id], references: [id])
+  lender    Lender     @relation(fields: [lender_id], references: [id])
   loans     Loan[]
   chatRooms ChatRoom[]
 
@@ -119,14 +113,14 @@ model Product {
 
 model Wallet {
   id          String   @id @default(uuid())
-  customer_id String?  @unique
-  seller_id   String?  @unique
+  borrower_id String?  @unique
+  lender_id   String?  @unique
   balance     Decimal  @default(0)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  customer Customer? @relation(fields: [customer_id], references: [id])
-  seller   Seller?   @relation(fields: [seller_id], references: [id])
+  borrower Borrower? @relation(fields: [borrower_id], references: [id])
+  lender   Lender?   @relation(fields: [lender_id], references: [id])
 
   @@map("wallets")
 }
@@ -134,8 +128,8 @@ model Wallet {
 model Payment {
   id               String      @id @default(uuid())
   type             PaymentType
-  customer_id      String?
-  seller_id        String?
+  borrower_id      String?
+  lender_id        String?
   amount           Decimal
   status           String
   order_id         String      @unique
@@ -146,51 +140,51 @@ model Payment {
   created_at       DateTime    @default(now())
   updated_at       DateTime    @updatedAt
 
-  customer Customer? @relation(fields: [customer_id], references: [id])
-  seller   Seller?   @relation(fields: [seller_id], references: [id])
+  borrower Borrower? @relation(fields: [borrower_id], references: [id])
+  lender   Lender?   @relation(fields: [lender_id], references: [id])
 
   @@map("payments")
 }
 
 model Transfer {
   id               String         @id @default(uuid())
-  from_customer_id String
-  to_seller_id     String
+  from_borrower_id String
+  to_lender_id     String
   amount           Decimal
   status           TransferStatus @default(PENDING)
   created_at       DateTime       @default(now())
   updated_at       DateTime       @updatedAt
 
-  fromCustomer Customer @relation(fields: [from_customer_id], references: [id], onDelete: Restrict)
-  toSeller     Seller   @relation(fields: [to_seller_id], references: [id], onDelete: Restrict)
+  fromBorrower Borrower @relation(fields: [from_borrower_id], references: [id], onDelete: Restrict)
+  toLender     Lender   @relation(fields: [to_lender_id], references: [id], onDelete: Restrict)
 
   @@map("transfers")
 }
 
 model BankAccount {
   id             String   @id @default(uuid())
-  seller_id      String   @unique
+  lender_id      String   @unique
   bank_code      String
   account_number String
   account_name   String
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 
-  seller Seller @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  lender Lender @relation(fields: [lender_id], references: [id], onDelete: Cascade)
 
   @@map("bank_accounts")
 }
 
 model ChatRoom {
   id          String        @id @default(uuid())
-  customer_id String
-  seller_id   String
+  borrower_id String
+  lender_id   String
   product_id  String
   created_at  DateTime      @default(now())
   messages    ChatMessage[]
 
-  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  seller   Seller   @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  borrower Borrower @relation(fields: [borrower_id], references: [id], onDelete: Cascade)
+  lender   Lender   @relation(fields: [lender_id], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@map("chat_rooms")
@@ -220,8 +214,8 @@ model Loan {
   updated_at  DateTime   @updatedAt
 
   product  Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [borrower_id], references: [id], onDelete: Cascade)
-  seller   Seller   @relation(fields: [lender_id], references: [id], onDelete: Cascade)
+  borrower Borrower @relation(fields: [borrower_id], references: [id], onDelete: Cascade)
+  lender   Lender   @relation(fields: [lender_id], references: [id], onDelete: Cascade)
   meeting  Meeting?
 
   @@map("loans")

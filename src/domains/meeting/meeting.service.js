@@ -23,8 +23,8 @@ class MeetingService extends BaseService {
 
     const meeting = await this.db.meeting.upsert({
       where: { loan_id: loanId },
-      update: { lat: lat, lon: lon, address: address, status: "PENDING" },
-      create: { loan_id: loanId, lat: lat, lon: lon, address: address },
+      update: { lat, lon, address, status: "PENDING" },
+      create: { loan_id: loanId, lat, lon, address },
     });
     return meeting;
   }
@@ -51,8 +51,8 @@ class MeetingService extends BaseService {
   async getMeeting(user, loanId) {
     const loan = await this.assertLoan(loanId);
     const isMember =
-      (user.role === Roles.Customer && loan.borrower_id === user.id) ||
-      (user.role === Roles.Seller && loan.lender_id === user.id);
+      (user.role === Roles.Borrower && loan.borrower_id === user.id) ||
+      (user.role === Roles.Lender && loan.lender_id === user.id);
     if (!isMember) throw this.error.forbidden("Not a participant");
 
     const meeting = await this.db.meeting.findUnique({
@@ -97,8 +97,8 @@ class MeetingService extends BaseService {
 
     const pendingTransfer = await this.db.transfer.findFirst({
       where: {
-        from_customer_id: loan.borrower_id,
-        to_seller_id: loan.lender_id,
+        from_borrower_id: loan.borrower_id,
+        to_lender_id: loan.lender_id,
         status: "PENDING",
       },
       orderBy: { created_at: "desc" },
@@ -107,11 +107,11 @@ class MeetingService extends BaseService {
       throw this.error.notFound("Pending transfer not found");
 
     let lenderWallet = await this.db.wallet.findUnique({
-      where: { seller_id: loan.lender_id },
+      where: { lender_id: loan.lender_id },
     });
     if (!lenderWallet)
       lenderWallet = await this.db.wallet.create({
-        data: { seller_id: loan.lender_id },
+        data: { lender_id: loan.lender_id },
       });
 
     await this.db.$transaction([

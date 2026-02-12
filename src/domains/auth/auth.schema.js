@@ -37,10 +37,10 @@ const registerSchema = Joi.object({
       "any.only": "Password confirmation does not match password.",
     }),
   role: Joi.string()
-    .valid(Roles.Customer, Roles.Seller)
+    .valid(Roles.Borrower, Roles.Lender)
     .required()
     .messages({
-      "any.only": `Role must be either ${Roles.Customer} or ${Roles.Seller}.`,
+      "any.only": `Role must be either ${Roles.Borrower} or ${Roles.Lender}.`,
       "string.empty": "Role is required.",
     }),
 });

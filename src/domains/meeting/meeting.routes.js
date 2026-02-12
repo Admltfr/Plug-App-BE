@@ -23,7 +23,7 @@ class MeetingRoutes extends BaseRoutes {
     this.router.post(
       "/:loanId/location",
       this.auth.authenticate,
-      this.auth.role([this.roles.Seller]),
+      this.auth.role([this.roles.Lender]),
       this.validate(proposeLocationSchema),
       this.errCatch(this.controller.proposeLocation.bind(this.controller)),
     );
@@ -31,7 +31,7 @@ class MeetingRoutes extends BaseRoutes {
     this.router.patch(
       "/:loanId/decision",
       this.auth.authenticate,
-      this.auth.role([this.roles.Customer]),
+      this.auth.role([this.roles.Borrower]),
       this.validate(locationDecisionSchema),
       this.errCatch(this.controller.locationDecision.bind(this.controller)),
     );
@@ -45,7 +45,7 @@ class MeetingRoutes extends BaseRoutes {
     this.router.post(
       "/:loanId/qr",
       this.auth.authenticate,
-      this.auth.role([this.roles.Customer]),
+      this.auth.role([this.roles.Borrower]),
       this.validate(qrGenerateSchema),
       this.errCatch(this.controller.generateQr.bind(this.controller)),
     );
@@ -53,7 +53,7 @@ class MeetingRoutes extends BaseRoutes {
     this.router.post(
       "/:loanId/scan",
       this.auth.authenticate,
-      this.auth.role([this.roles.Seller]),
+      this.auth.role([this.roles.Lender]),
       this.validate(qrScanSchema),
       this.errCatch(this.controller.scanFinalize.bind(this.controller)),
     );

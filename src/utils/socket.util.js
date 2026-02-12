@@ -28,8 +28,8 @@ export function initSocket(httpServer) {
       const room = await Prisma.chatRoom.findUnique({ where: { id: roomId } });
       if (!room) return;
       const isMember =
-        (user.role === Roles.Customer && room.customer_id === user.id) ||
-        (user.role === Roles.Seller && room.seller_id === user.id);
+        (user.role === Roles.Borrower && room.borrower_id === user.id) ||
+        (user.role === Roles.Lender && room.lender_id === user.id);
       if (!isMember) return;
       socket.join(`room:${roomId}`);
     });
@@ -41,11 +41,21 @@ export function initSocket(httpServer) {
         });
         if (!room) return;
         const isMember =
-          (user.role === Roles.Customer && room.customer_id === user.id) ||
-          (user.role === Roles.Seller && room.seller_id === user.id);
+          (user.role === Roles.Borrower && room.borrower_id === user.id) ||
+          (user.role === Roles.Lender && room.lender_id === user.id);
         if (!isMember) return;
 
-        const sender = user.role === Roles.Customer ? "CUSTOMER" : "SELLER";
+        const loan = await Prisma.loan.findFirst({
+          where: {
+            product_id: room.product_id,
+            borrower_id: room.borrower_id,
+            lender_id: room.lender_id,
+          },
+          orderBy: { created_at: "desc" },
+        });
+        if (loan && loan.status === "COMPLETED") return;
+
+        const sender = user.role === Roles.Borrower ? "BORROWER" : "LENDER";
         const msg = await Prisma.chatMessage.create({
           data: {
             room_id: roomId,

@@ -17,22 +17,22 @@ class PaymentService extends BaseService {
   }
 
   async ensureWallet(user) {
-    if (user.role === Roles.Customer) {
+    if (user.role === Roles.Borrower) {
       let wallet = await this.db.wallet.findUnique({
-        where: { customer_id: user.id },
+        where: { borrower_id: user.id },
       });
       if (!wallet)
         wallet = await this.db.wallet.create({
-          data: { customer_id: user.id },
+          data: { borrower_id: user.id },
         });
       return wallet;
     }
-    if (user.role === Roles.Seller) {
+    if (user.role === Roles.Lender) {
       let wallet = await this.db.wallet.findUnique({
-        where: { seller_id: user.id },
+        where: { lender_id: user.id },
       });
       if (!wallet)
-        wallet = await this.db.wallet.create({ data: { seller_id: user.id } });
+        wallet = await this.db.wallet.create({ data: { lender_id: user.id } });
       return wallet;
     }
     throw this.error.badRequest("Invalid role");
@@ -46,12 +46,11 @@ class PaymentService extends BaseService {
   async createTopup(user, amountRaw) {
     const amount = Number(amountRaw);
     if (!amount || amount <= 0) throw this.error.badRequest("Invalid amount");
-    if (user.role !== Roles.Customer)
+    if (user.role !== Roles.Borrower)
       throw this.error.forbidden("Only borrower can topup");
 
     const ts = Date.now().toString().slice(-8);
     const uid = user.id.slice(0, 8);
-
     const orderId = `TP-${uid}-${ts}`;
 
     const parameter = {
@@ -63,7 +62,7 @@ class PaymentService extends BaseService {
     await this.db.payment.create({
       data: {
         type: "TOPUP",
-        customer_id: user.id,
+        borrower_id: user.id,
         amount,
         status: "PENDING",
         order_id: orderId,
@@ -103,7 +102,6 @@ class PaymentService extends BaseService {
     }
 
     const payment = await this.db.payment.findUnique({ where: { order_id } });
-
     if (!payment) throw this.error.notFound("Payment not found");
 
     await this.db.payment.update({
@@ -120,7 +118,7 @@ class PaymentService extends BaseService {
       (transaction_status === "settlement" || transaction_status === "capture")
     ) {
       await this.db.wallet.update({
-        where: { customer_id: payment.customer_id },
+        where: { borrower_id: payment.borrower_id },
         data: { balance: { increment: Number(payment.amount) } },
       });
     }
@@ -142,11 +140,11 @@ class PaymentService extends BaseService {
       throw this.error.badRequest("Insufficient balance");
 
     let lenderWallet = await this.db.wallet.findUnique({
-      where: { seller_id: lenderId },
+      where: { lender_id: lenderId },
     });
     if (!lenderWallet)
       lenderWallet = await this.db.wallet.create({
-        data: { seller_id: lenderId },
+        data: { lender_id: lenderId },
       });
 
     const ops = [
@@ -156,25 +154,17 @@ class PaymentService extends BaseService {
       }),
       this.db.transfer.create({
         data: {
-          from_customer_id: user.id,
-          to_seller_id: lenderId,
+          from_borrower_id: user.id,
+          to_lender_id: lenderId,
           amount,
           status: "PENDING",
         },
       }),
-      this.db.loan.update({
-        where: { id: loanId },
-        data: { status: "PAID" },
-      }),
+      this.db.loan.update({ where: { id: loanId }, data: { status: "PAID" } }),
     ];
 
     const tx = await this.db.$transaction(ops);
-    return {
-      transferId: tx[1].id,
-      amount,
-      loanId,
-      loanStatus: "PAID",
-    };
+    return { transferId: tx[1].id, amount, loanId, loanStatus: "PAID" };
   }
 }
 

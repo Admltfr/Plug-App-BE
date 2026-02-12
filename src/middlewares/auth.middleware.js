@@ -32,38 +32,38 @@ class AuthMiddleware {
         !decoded.id ||
         !decoded.role ||
         !(
-          decoded.role === this.roles.Customer ||
-          decoded.role === this.roles.Seller
+          decoded.role === this.roles.Borrower ||
+          decoded.role === this.roles.Lender
         )
       ) {
         logger.warn("Decoded token is invalid or missing required fields");
         return next(BaseError.forbidden("Token Is Invalid Or No Longer Valid"));
       }
 
-      if (decoded.role === this.roles.Seller) {
-        const seller = await this.prisma.seller.findUnique({
+      if (decoded.role === this.roles.Lender) {
+        const lender = await this.prisma.lender.findUnique({
           where: { id: decoded.id },
         });
 
-        if (!seller) {
-          logger.warn(`Seller with ID ${decoded.id} not found in database`);
-          return next(BaseError.notFound("Seller Not Found"));
+        if (!lender) {
+          logger.warn(`Lender with ID ${decoded.id} not found in database`);
+          return next(BaseError.notFound("Lender Not Found"));
         }
 
-        req.user = seller;
-        req.user.role = this.roles.Seller;
-      } else if (decoded.role === this.roles.Customer) {
-        const customer = await this.prisma.customer.findUnique({
+        req.user = lender;
+        req.user.role = this.roles.Lender;
+      } else if (decoded.role === this.roles.Borrower) {
+        const borrower = await this.prisma.borrower.findUnique({
           where: { id: decoded.id },
         });
 
-        if (!customer) {
-          logger.warn(`Customer with ID ${decoded.id} not found in database`);
-          return next(BaseError.notFound("Customer Not Found"));
+        if (!borrower) {
+          logger.warn(`Borrower with ID ${decoded.id} not found in database`);
+          return next(BaseError.notFound("Borrower Not Found"));
         }
-
-        req.user = customer;
-        req.user.role = this.roles.Customer;
+        
+        req.user = borrower;
+        req.user.role = this.roles.Borrower;
       } else {
         logger.warn("Token type is invalid");
         return next(BaseError.forbidden("Token Is Invalid Or No Longer Valid"));
