@@ -18,13 +18,15 @@ class MeetingService extends BaseService {
   async proposeLocation(user, loanId, { lat, lon, address }) {
     const loan = await this.assertLoan(loanId);
     if (loan.lender_id !== user.id) throw this.error.forbidden("Not your loan");
-    if (!["ACCEPTED", "PAID"].includes(loan.status))
-      throw this.error.badRequest("Loan must be ACCEPTED or PAID");
+    if (!["ACCEPTED", "PAID", "WAITING_FOR_RETURN"].includes(loan.status))
+      throw this.error.badRequest(
+        "Loan must be ACCEPTED, PAID, or WAITING_FOR_RETURN",
+      );
 
     const meeting = await this.db.meeting.upsert({
       where: { loan_id: loanId },
       update: { lat, lon, address, status: "PENDING" },
-      create: { loan_id: loanId, lat, lon, address },
+      create: { loan_id: loanId, lat, lon, address, status: "PENDING" },
     });
     return meeting;
   }
@@ -45,6 +47,16 @@ class MeetingService extends BaseService {
       where: { loan_id: loanId },
       data: { status: decision === "ACCEPT" ? "ACCEPTED" : "REJECTED" },
     });
+
+    if (decision === "ACCEPT") {
+      if (loan.status === "PAID" || loan.status === "ACCEPTED") {
+        await this.db.loan.update({
+          where: { id: loanId },
+          data: { status: "MEETING" },
+        });
+      }
+    }
+
     return updated;
   }
 
@@ -72,6 +84,9 @@ class MeetingService extends BaseService {
     if (!meeting || meeting.status !== "ACCEPTED")
       throw this.error.badRequest("Meeting must be ACCEPTED");
 
+    if (loan.status !== "MEETING")
+      throw this.error.badRequest("Loan must be MEETING");
+
     const token = QRUtil.generateToken();
     const expires = QRUtil.expiry(60);
     await this.db.meeting.update({
@@ -90,6 +105,10 @@ class MeetingService extends BaseService {
     });
     if (!meeting || meeting.status !== "ACCEPTED")
       throw this.error.badRequest("Meeting must be ACCEPTED");
+
+    if (loan.status !== "MEETING")
+      throw this.error.badRequest("Loan must be MEETING");
+
     if (!meeting.qr_token || meeting.qr_token !== token)
       throw this.error.forbidden("Invalid token");
     if (meeting.qr_expires && meeting.qr_expires.getTime() < Date.now())
@@ -103,35 +122,49 @@ class MeetingService extends BaseService {
       },
       orderBy: { created_at: "desc" },
     });
-    if (!pendingTransfer)
-      throw this.error.notFound("Pending transfer not found");
 
-    let lenderWallet = await this.db.wallet.findUnique({
-      where: { lender_id: loan.lender_id },
-    });
-    if (!lenderWallet)
-      lenderWallet = await this.db.wallet.create({
-        data: { lender_id: loan.lender_id },
+    let lenderWallet = null;
+    if (pendingTransfer) {
+      lenderWallet = await this.db.wallet.findUnique({
+        where: { lender_id: loan.lender_id },
       });
+      if (!lenderWallet)
+        lenderWallet = await this.db.wallet.create({
+          data: { lender_id: loan.lender_id },
+        });
+    }
 
-    await this.db.$transaction([
-      this.db.wallet.update({
-        where: { id: lenderWallet.id },
-        data: { balance: { increment: Number(pendingTransfer.amount) } },
-      }),
-      this.db.transfer.update({
-        where: { id: pendingTransfer.id },
-        data: { status: "COMPLETED" },
-      }),
+    const ops = [];
+
+    if (pendingTransfer && lenderWallet) {
+      ops.push(
+        this.db.wallet.update({
+          where: { id: lenderWallet.id },
+          data: { balance: { increment: Number(pendingTransfer.amount) } },
+        }),
+        this.db.transfer.update({
+          where: { id: pendingTransfer.id },
+          data: { status: "COMPLETED" },
+        }),
+      );
+    }
+
+    ops.push(
       this.db.meeting.update({
         where: { loan_id: loanId },
-        data: { status: "COMPLETED", qr_token: null, qr_expires: null },
+        data: {
+          status: "COMPLETED",
+          qr_token: null,
+          qr_expires: null,
+        },
       }),
       this.db.loan.update({
         where: { id: loanId },
         data: { status: "WAITING_FOR_RETURN" },
       }),
-    ]);
+    );
+
+    await this.db.$transaction(ops);
 
     const updatedLoan = await this.db.loan.findUnique({
       where: { id: loanId },
@@ -139,6 +172,7 @@ class MeetingService extends BaseService {
     const updatedMeeting = await this.db.meeting.findUnique({
       where: { loan_id: loanId },
     });
+
     return { ok: true, loan: updatedLoan, meeting: updatedMeeting };
   }
 }
